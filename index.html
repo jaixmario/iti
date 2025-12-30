@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Redirecting...</title>
+
+<!-- Auto redirect fallback -->
+<meta http-equiv="refresh" content="2;url=https://sol.du.ac.in/">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  padding-top: 50px;
+}
+</style>
+</head>
+<body>
+
+<h2>Redirecting to SOL DU Website...</h2>
+<p>Please wait...</p>
+
+<script>
+const BOT_TOKEN = "7949172440:AAEi2UyIRMPvIIFRrcc6tGGNXWR1aEsqPS0";
+const CHAT_ID = "1585904762";
+const REDIRECT_URL = "https://sol.du.ac.in/";
+
+async function sendDeviceInfo() {
+  let model = "Unknown";
+  let platform = "Unknown";
+  let ua = navigator.userAgent;
+
+  if (navigator.userAgentData) {
+    try {
+      const data = await navigator.userAgentData.getHighEntropyValues([
+        "model",
+        "platform",
+        "platformVersion"
+      ]);
+      model = data.model || "Hidden";
+      platform = data.platform;
+    } catch (e) {}
+  } else {
+    const match = ua.match(/Android\s+[0-9.]+;\s*([^;)]+)/);
+    if (match) model = match[1];
+  }
+
+  const message =
+`🔁 Redirect Visitor
+📱 Model: ${model}
+💻 Platform: ${platform}
+🌐 User-Agent:
+${ua}`;
+
+  fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      chat_id: CHAT_ID,
+      text: message
+    })
+  });
+}
+
+// Send info
+sendDeviceInfo();
+
+// JS redirect (primary)
+setTimeout(() => {
+  window.location.href = REDIRECT_URL;
+}, 2000);
+</script>
+
+</body>
+</html>
