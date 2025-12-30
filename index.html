@@ -2,34 +2,57 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Redirecting...</title>
+<title>Device Model Detector</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- Auto redirect fallback -->
-<meta http-equiv="refresh" content="2;url=https://sol.du.ac.in/">
+<!-- UAParser API -->
+<script src="https://cdn.jsdelivr.net/npm/ua-parser-js@1/dist/ua-parser.min.js"></script>
 
 <style>
 body {
   font-family: Arial, sans-serif;
-  text-align: center;
-  padding-top: 50px;
+  background: #0f172a;
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+.card {
+  background: #020617;
+  padding: 20px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 400px;
+}
+h2 {
+  margin-top: 0;
+  color: #38bdf8;
+}
+pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: #020617;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #1e293b;
 }
 </style>
 </head>
-<body>
 
-<h2>Redirecting to SOL DU Website...</h2>
-<p>Please wait...</p>
+<body>
+<div class="card">
+  <h2>📱 Device Info</h2>
+  <pre id="output">Detecting...</pre>
+</div>
 
 <script>
-const BOT_TOKEN = "7949172440:AAEi2UyIRMPvIIFRrcc6tGGNXWR1aEsqPS0";
-const CHAT_ID = "1585904762";
-const REDIRECT_URL = "https://sol.du.ac.in/";
+async function getBestDeviceModel() {
+  let model = "Hidden";
+  let brand = "Unknown";
+  let method = "None";
 
-async function sendDeviceInfo() {
-  let model = "Unknown";
-  let platform = "Unknown";
-  let ua = navigator.userAgent;
-
+  // 1️⃣ Client Hints (Chrome / Edge)
   if (navigator.userAgentData) {
     try {
       const data = await navigator.userAgentData.getHighEntropyValues([
@@ -37,39 +60,50 @@ async function sendDeviceInfo() {
         "platform",
         "platformVersion"
       ]);
-      model = data.model || "Hidden";
-      platform = data.platform;
-    } catch (e) {}
-  } else {
-    const match = ua.match(/Android\s+[0-9.]+;\s*([^;)]+)/);
-    if (match) model = match[1];
+      if (data.model) {
+        model = data.model;
+        brand = data.platform;
+        method = "User-Agent Client Hints";
+        return { model, brand, method };
+      }
+    } catch {}
   }
 
-  const message =
-`🔁 Redirect Visitor
-📱 Model: ${model}
-💻 Platform: ${platform}
-🌐 User-Agent:
-${ua}`;
+  // 2️⃣ UAParser API
+  const parser = new UAParser();
+  const result = parser.getResult();
+  if (result.device.model) {
+    model = result.device.model;
+    brand = result.device.vendor || "Unknown";
+    method = "UAParser API";
+    return { model, brand, method };
+  }
 
-  fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      chat_id: CHAT_ID,
-      text: message
-    })
-  });
+  // 3️⃣ Manual Android UA parsing
+  const ua = navigator.userAgent;
+  const match = ua.match(/Android\s[\d.]+;\s([^;)]+)/);
+  if (match) {
+    model = match[1];
+    brand = "Android";
+    method = "User-Agent Regex";
+    return { model, brand, method };
+  }
+
+  // 4️⃣ Fallback
+  return { model, brand, method: "Blocked by OS/Browser" };
 }
 
-// Send info
-sendDeviceInfo();
+(async () => {
+  const info = await getBestDeviceModel();
 
-// JS redirect (primary)
-setTimeout(() => {
-  window.location.href = REDIRECT_URL;
-}, 2000);
+  document.getElementById("output").textContent =
+`Model     : ${info.model}
+Brand     : ${info.brand}
+Method    : ${info.method}
+
+User-Agent:
+${navigator.userAgent}`;
+})();
 </script>
-
 </body>
 </html>
